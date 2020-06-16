@@ -6,6 +6,7 @@
 const express = require('express');
 const { buildBackgroundServerModule } = require('../../common/backgroundServer');
 const UPSTREAM_OAUTH_PORT = 9091;
+var bodyParser = require('body-parser');
 
 function prefixPath(path) {
   return `${upstreamOAuthTestServerBaseUrl()}` + path;
@@ -14,6 +15,7 @@ function prefixPath(path) {
 // Builds the express app. Returns a reference to it.
 function buildUpstreamOAuthTestApp() {
   const app = express();
+  app.use(bodyParser.urlencoded({ type: 'application/x-www-form-urlencoded' }))
   app.get('/.well-known/openid-configuration', (req, res) => {
     res.json({
       issuer: "https://deptva-eval.okta.com/oauth2/default",
@@ -162,11 +164,16 @@ function buildUpstreamOAuthTestApp() {
     });
   });
 
+  
   app.post('/revoke', (req, res) => {
     if (req.headers.authorization === undefined) {
-      res.status(400).send("invalid client_id");
+      res.status(400).send('Bad Request');
+    } else if ((req.body === undefined || req.body.token === undefined)
+     && req.query.token === undefined) {
+      res.status(400).send('Bad Request');
+    } else {
+      res.end();
     }
-    res.end();
   });
 
   app.get('/authorize', (req, res) => {
